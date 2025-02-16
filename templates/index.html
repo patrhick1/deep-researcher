@@ -1,0 +1,131 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Research Report Chatbot</title>
+    <!-- Link to your CSS in /static/style.css -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Research Report Chatbot</h1>
+
+    <div id="chatbox"></div>
+
+    <!-- Loading indicator (hidden by default) -->
+    <div id="loading-indicator" style="display:none; color:red; font-weight:bold;">
+        Performing deep research on your topic... please wait.
+    </div>
+
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Enter your message here...">
+        <button id="send-btn">Send</button>
+    </div>
+    <br>
+    <button id="download-btn">Download Report</button>
+
+    <!-- Your script references -->
+    <script src="/static/script.js"></script>
+    <script>
+        const chatbox = document.getElementById("chatbox");
+        const userInput = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+        const downloadBtn = document.getElementById("download-btn");
+        const loadingIndicator = document.getElementById("loading-indicator");
+
+        function addMessage(sender, message) {
+            const div = document.createElement("div");
+            div.className = "message " + (sender === "User" ? "user" : "agent");
+            div.innerHTML = "<strong>" + sender + ":</strong> " + message;
+            chatbox.appendChild(div);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = userInput.value;
+            if (!text) return;
+
+            // Show the loading indicator right after user sends a message
+            loadingIndicator.style.display = "block";
+
+            addMessage("User", text);
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({message: text})
+                });
+                const data = await response.json();
+                addMessage("Agent", data.reply);
+            } catch (err) {
+                addMessage("Agent", "Error: Unable to reach the server.");
+                console.error(err);
+            } finally {
+                // Hide the loading indicator once we have a server response (success or error)
+                loadingIndicator.style.display = "none";
+            }
+
+            userInput.value = "";
+        }
+
+        sendBtn.addEventListener("click", sendMessage);
+        userInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") sendMessage();
+        });
+
+        async function downloadReport() {
+            const res = await fetch("/download_report?ts=" + Date.now());
+            if (res.ok) {
+                // 1. Extract text content (the file data)
+                const content = await res.text();
+
+                // 2. Parse filename from Content-Disposition if it exists
+                let filename = "report.md";  // default
+                const disposition = res.headers.get("Content-Disposition");
+                if (disposition) {
+                    const match = /filename="([^"]+)"/.exec(disposition);
+                    if (match && match[1]) {
+                        filename = match[1];
+                    }
+                }
+
+                // 3. Try the File System Access API first
+                if (window.showSaveFilePicker) {
+                    try {
+                        const options = {
+                            suggestedName: filename,
+                            types: [{
+                                description: 'Markdown File',
+                                accept: {'text/markdown': ['.md']},
+                            }],
+                        };
+                        const handle = await window.showSaveFilePicker(options);
+                        const writable = await handle.createWritable();
+                        await writable.write(content);
+                        await writable.close();
+                        alert("Report saved successfully!");
+                    } catch (err) {
+                        console.error("Error saving file:", err);
+                    }
+                } else {
+                    // 4. Fallback: create a download link with a dynamic filename
+                    const blob = new Blob([content], {type: "text/markdown"});
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                }
+            } else {
+                alert("Report not found.");
+            }
+        }
+
+        downloadBtn.addEventListener("click", downloadReport);
+    </script>
+</body>
+</html>
