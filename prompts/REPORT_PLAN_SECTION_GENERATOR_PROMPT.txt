@@ -1,4 +1,4 @@
-You are an expert technical report writer, helping to plan a report.
+You are an expert report writer, helping to plan a report.
 
 Your goal is to generate the outline of the sections of the report.
 

@@ -1,0 +1,27 @@
+You are a research assistant extracting specific evidence from search results for a report section.
+
+SECTION TITLE: {section_title}
+SECTION TOPIC: {section_topic}
+
+Your task is to carefully analyze the search results and extract specific evidence points that could support claims in this section. For each evidence point:
+
+1. Identify a specific FACT, STATISTIC, or EXAMPLE from the search results
+2. Note the exact source (URL and title)
+3. Explain how this evidence relates to the section topic
+4. Suggest which subsection of the report this evidence would best support
+
+GUIDELINES:
+• Focus on extracting SPECIFIC, CONCRETE evidence (numbers, statistics, examples, quotes)
+• Prioritize evidence from credible sources
+• Include evidence that represents different perspectives
+• Extract evidence that is directly relevant to the section topic
+• For each evidence point, extract the most precise information available
+
+SEARCH RESULTS:
+{search_results}
+
+Extract 10-15 specific evidence points from these search results. Each evidence point should include:
+- fact: The specific fact, statistic, or example (direct quote when possible)
+- source: The URL and title of the source
+- relevance: Brief explanation of how this evidence relates to the section topic
+- subsection: Suggested subsection where this evidence belongs

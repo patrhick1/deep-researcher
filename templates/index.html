@@ -1,38 +1,119 @@
-<!-- templates/index.html -->
-
 <!DOCTYPE html>
 <html>
 <head>
     <title>Research Report Chatbot</title>
-    <!-- Link to your CSS in /static/style.css -->
     <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/static/favicon.png">
 </head>
 <body>
     <h1>Research Report Chatbot</h1>
-
-    <div id="chatbox"></div>
-
-    <!-- Loading indicator (hidden by default) -->
-    <div id="loading-indicator" style="display:none; color:red; font-weight:bold;">
-        Performing deep research on your topic... please wait.
+    
+    <!-- Configuration Form -->
+    <div id="config-form" class="form-container">
+        <h2>Report Configuration</h2>
+        <form id="report-config-form">
+            <div class="form-group">
+                <label for="research-type">Type of Research:</label>
+                <select id="research-type" name="research_type" required>
+                    <option value="">Select</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Business">Business</option>
+                    <option value="Other">Other</option>
+                </select>
+                <small>Select the category that best fits your research report.</small>
+            </div>
+            <div class="form-group">
+                <label for="target-audience">Target Audience:</label>
+                <input type="text" id="target-audience" name="target_audience" required>
+                <small>Enter the intended audience for the report (e.g., professionals, students, general public).</small>
+            </div>
+            <div class="form-group">
+                <label for="structure">Structural Expectation:</label>
+                <textarea id="structure" name="structure" rows="2" required></textarea>
+                <small>Outline the desired structure of your report, e.g. introduction, analysis, conclusion.</small>
+            </div>
+            <div class="form-group">
+                <label for="section-word-limit">Sections Word Limit:</label>
+                <input type="number" id="section-word-limit" name="section_word_limit" min="100" required>
+                <small>Enter the maximum word count for the final report.</small>
+            </div>
+            <div class="form-group">
+                <label for="writing-style">Writing Style Constraint:</label>
+                <textarea id="writing-style" name="writing_style" rows="2" required></textarea>
+                <small>Describe any specific stylistic requirements (e.g., formal, persuasive, technical).</small>
+            </div>
+            <button type="submit" id="config-submit-btn">Submit Configuration</button>
+        </form>
     </div>
-
-    <div id="input-area">
-        <input type="text" id="user-input" placeholder="Enter your message here...">
-        <button id="send-btn">Send</button>
+    
+    <!-- Chat Interface: hidden by default (via .hidden class) until configuration is submitted -->
+    <div id="chat-interface" class="hidden">
+        <div id="chatbox"></div>
+        <!-- Loading indicator (hidden by default) -->
+        <div id="loading-indicator" class="loading-indicator-hidden">
+            Performing deep research on your topic... please wait.
+        </div>
+        
+        <div id="input-area">
+            <textarea id="user-input" placeholder="Enter your message here..." rows="2"></textarea>
+            <button id="send-btn">Send</button>
+        </div>
+        
+        <div id="button-area">
+            <button id="download-btn">Download Report</button>
+            <button id="reset-btn">New Report</button>
+        </div>
     </div>
-    <br>
-    <button id="download-btn">Download Report</button>
-
-    <!-- Your script references -->
-    <script src="/static/script.js"></script>
+    
+    <!-- Scripts -->
     <script>
+        const configForm = document.getElementById("report-config-form");
+        const configDiv = document.getElementById("config-form");
+        const chatInterface = document.getElementById("chat-interface");
         const chatbox = document.getElementById("chatbox");
         const userInput = document.getElementById("user-input");
         const sendBtn = document.getElementById("send-btn");
         const downloadBtn = document.getElementById("download-btn");
+        const resetBtn = document.getElementById("reset-btn");
         const loadingIndicator = document.getElementById("loading-indicator");
-
+        
+        configForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const formData = {
+                research_type: document.getElementById("research-type").value,
+                target_audience: document.getElementById("target-audience").value,
+                structure: document.getElementById("structure").value,
+                section_word_limit: parseInt(document.getElementById("section-word-limit").value),
+                writing_style: document.getElementById("writing-style").value
+            };
+            try {
+                const response = await fetch("/config", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(formData)
+                });
+                if (response.ok) {
+                    alert("Configuration submitted successfully!");
+                    configDiv.style.display = "none";         // Hide form
+                    
+                    // Make sure both class and opacity are properly reset
+                    chatInterface.classList.remove("hidden"); 
+                    chatInterface.style.opacity = "1";        // Explicitly set opacity back to 1
+                    
+                } else {
+                    alert("Error submitting configuration.");
+                }
+            } catch (err) {
+                alert("Error submitting configuration.");
+                console.error(err);
+            }
+        });
+        
+        // Function to add message to chat
         function addMessage(sender, message) {
             const div = document.createElement("div");
             div.className = "message " + (sender === "User" ? "user" : "agent");
@@ -40,16 +121,43 @@
             chatbox.appendChild(div);
             chatbox.scrollTop = chatbox.scrollHeight;
         }
-
+        
+        // Function to handle messages from server
+        function handleResponse(response) {
+            if (!response || !response.reply) return;
+            
+            const replyText = response.reply.replace(/\n/g, '<br>');
+            
+            if (response.type === 'feedback') {
+                addSystemMessage(`🚨 **Improvements Needed**<br>${replyText}`);
+            } else if (response.type === 'confirmation') {
+                addSystemMessage(`${replyText}<br><br><em>Respond with 'YES' to approve or provide additional details</em>`);
+            } else if (response.type === 'error') {
+                addSystemMessage(`❌ **Error**<br>${replyText}`);
+            } else if (response.type === 'final_report') {
+                addMessage("Agent", replyText);
+                // Make download button more visible
+                downloadBtn.classList.add("highlight");
+            } else {
+                addMessage("Agent", replyText);
+            }
+        }
+        
+        // Add specialized system messages
+        function addSystemMessage(message) {
+            const div = document.createElement("div");
+            div.className = "message system";
+            div.innerHTML = message;
+            chatbox.appendChild(div);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+        
+        // Function to send message
         async function sendMessage() {
-            const text = userInput.value;
+            const text = userInput.value.trim();
             if (!text) return;
-
-            // Show the loading indicator right after user sends a message
             loadingIndicator.style.display = "block";
-
             addMessage("User", text);
-
             try {
                 const response = await fetch("/chat", {
                     method: "POST",
@@ -57,59 +165,85 @@
                     body: JSON.stringify({message: text})
                 });
                 const data = await response.json();
-                addMessage("Agent", data.reply);
+                handleResponse(data);
             } catch (err) {
-                addMessage("Agent", "Error: Unable to reach the server.");
+                handleResponse({
+                    reply: "Error: Unable to reach the server.",
+                    type: "error"
+                });
                 console.error(err);
             } finally {
-                // Hide the loading indicator once we have a server response (success or error)
                 loadingIndicator.style.display = "none";
+                userInput.value = "";
             }
-
-            userInput.value = "";
         }
-
-        sendBtn.addEventListener("click", sendMessage);
-        userInput.addEventListener("keydown", function(event) {
-            if (event.key === "Enter") sendMessage();
-        });
-
-        async function downloadReport() {
-            const res = await fetch("/download_report?ts=" + Date.now());
-            if (res.ok) {
-                // 1. Extract text content (the file data)
-                const content = await res.text();
-
-                // 2. Parse filename from Content-Disposition if it exists
-                let filename = "report.md";  // default
-                const disposition = res.headers.get("Content-Disposition");
-                if (disposition) {
-                    const match = /filename="([^"]+)"/.exec(disposition);
-                    if (match && match[1]) {
-                        filename = match[1];
-                    }
-                }
-
-                // 3. Try the File System Access API first
-                if (window.showSaveFilePicker) {
-                    try {
-                        const options = {
-                            suggestedName: filename,
-                            types: [{
-                                description: 'Markdown File',
-                                accept: {'text/markdown': ['.md']},
-                            }],
-                        };
-                        const handle = await window.showSaveFilePicker(options);
-                        const writable = await handle.createWritable();
-                        await writable.write(content);
-                        await writable.close();
-                        alert("Report saved successfully!");
-                    } catch (err) {
-                        console.error("Error saving file:", err);
-                    }
+        
+        // Function to reset conversation
+        async function resetConversation() {
+            try {
+                // Show a subtle loading effect on the reset button
+                resetBtn.textContent = "Resetting...";
+                resetBtn.disabled = true;
+                
+                const response = await fetch("/reset", {
+                    method: "POST"
+                });
+                
+                if (response.ok) {
+                    // Clear the chat interface with a fade effect
+                    chatInterface.style.opacity = "0";
+                    
+                    // Wait for fade animation to complete
+                    setTimeout(() => {
+                        // Clear chat content
+                        chatbox.innerHTML = '';
+                        
+                        // Show configuration form again
+                        configDiv.style.display = "block";
+                        
+                        // IMPORTANT: Reset all chat interface properties
+                        chatInterface.classList.add("hidden");
+                        
+                        // Reset button state
+                        resetBtn.textContent = "New Report";
+                        resetBtn.disabled = false;
+                        
+                        // Remove highlight from download button if it exists
+                        downloadBtn.classList.remove("highlight");
+                    }, 500);
                 } else {
-                    // 4. Fallback: create a download link with a dynamic filename
+                    alert("Error resetting conversation.");
+                    resetBtn.textContent = "New Report";
+                    resetBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error("Error resetting conversation:", err);
+                alert("Failed to reset conversation.");
+                resetBtn.textContent = "New Report";
+                resetBtn.disabled = false;
+            }
+        }
+        
+        // Function to download report
+        async function downloadReport() {
+            // Show loading state
+            downloadBtn.textContent = "Downloading...";
+            downloadBtn.disabled = true;
+            
+            try {
+                const res = await fetch("/download_report?ts=" + Date.now());
+                if (res.ok) {
+                    const content = await res.text();
+                    let filename = "report.md";
+                    const disposition = res.headers.get("Content-Disposition");
+                    if (disposition) {
+                        const match = /filename="([^"]+)"/.exec(disposition);
+                        if (match && match[1]) {
+                            filename = match[1];
+                        }
+                    }
+                    
+                    // Create and trigger download
                     const blob = new Blob([content], {type: "text/markdown"});
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement("a");
@@ -119,13 +253,56 @@
                     a.click();
                     a.remove();
                     window.URL.revokeObjectURL(url);
+                    
+                    // Create a modern toast notification
+                    const toast = document.createElement("div");
+                    toast.className = "toast-notification";
+                    toast.innerHTML = `
+                        <div class="toast-content">
+                            <span>✅ Report downloaded successfully!</span>
+                            <button class="toast-action">Start New Report</button>
+                        </div>
+                    `;
+                    document.body.appendChild(toast);
+                    
+                    // Show the toast
+                    setTimeout(() => toast.classList.add("show"), 100);
+                    
+                    // Add event listener to the action button
+                    toast.querySelector(".toast-action").addEventListener("click", () => {
+                        resetConversation();
+                        toast.classList.remove("show");
+                        setTimeout(() => toast.remove(), 300);
+                    });
+                    
+                    // Auto-hide toast after 8 seconds
+                    setTimeout(() => {
+                        toast.classList.remove("show");
+                        setTimeout(() => toast.remove(), 300);
+                    }, 8000);
+                } else {
+                    alert("Report not found.");
                 }
-            } else {
-                alert("Report not found.");
+            } catch (err) {
+                console.error("Error downloading report:", err);
+                alert("Failed to download report.");
+            } finally {
+                // Reset button state
+                downloadBtn.textContent = "Download Report";
+                downloadBtn.disabled = false;
             }
         }
-
+        
+        // Add event listeners
+        sendBtn.addEventListener("click", sendMessage);
+        userInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
         downloadBtn.addEventListener("click", downloadReport);
+        resetBtn.addEventListener("click", resetConversation);
     </script>
 </body>
 </html>

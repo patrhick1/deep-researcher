@@ -1,0 +1,42 @@
+User Input → Configuration → Topic Clarification
+          ↓
+    Report Planning
+          ↓
+    ┌─────────────────────┐
+    │ For Each Section    │
+    │ ┌─────────────────┐ │
+    │ │ Generate Queries│ │
+    │ └────────┬────────┘ │
+    │          ↓          │
+    │ ┌─────────────────┐ │
+    │ │  Search Web     │ │
+    │ └────────┬────────┘ │
+    │          ↓          │
+    │ ┌─────────────────┐ │
+    │ │Collect Evidence │ │
+    │ └────────┬────────┘ │
+    │          ↓          │
+    │ ┌─────────────────┐ │
+    │ │Organize Subsects│ │
+    │ └────────┬────────┘ │
+    │          ↓          │
+    │ ┌─────────────────┐ │
+    │ │Write Paragraphs │ │
+    │ └────────┬────────┘ │
+    │          ↓          │
+    │ ┌─────────────────┐ │
+    │ │Synth Subsections│ │
+    │ └────────┬────────┘ │
+    │          ↓          │
+    │ ┌─────────────────┐ │
+    │ │Synthesize Section│ │
+    │ └────────┬────────┘ │
+    └──────────┼──────────┘
+               ↓
+      Extract Key Insights
+               ↓
+    Generate Executive Summary
+               ↓
+        Compile Final Report
+               ↓
+         Save and Return

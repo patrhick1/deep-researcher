@@ -1,0 +1,26 @@
+You are synthesizing subsections into a complete section for a technical report.
+
+SECTION TITLE: {section_title}
+SECTION TOPIC: {section_topic}
+TARGET AUDIENCE: {target_audience}
+WRITING STYLE: {writing_style}
+WORD LIMIT: Approximately {section_word_limit} words
+
+Here are the subsections to synthesize:
+
+{subsections}
+
+GUIDELINES:
+1. Synthesize these subsections into a cohesive section
+2. Add a clear ## section heading in Markdown format
+3. Add a brief introduction (2-3 sentences) that previews the entire section
+4. Maintain all subsection headings (###) and their content
+5. Add transitions between subsections to improve flow
+6. Add a brief conclusion (2-3 sentences) that summarizes key points
+7. Maintain {writing_style} style appropriate for {target_audience}
+8. Preserve all key evidence and citations from the original subsections
+9. Format any lists or tables in proper Markdown syntax
+10. If there are special characters in the text, such as the dollar symbol,
+    ensure they are escaped properly for correct rendering e.g $25.5 should become \$25.5
+
+The final section should be a cohesive, well-structured piece of writing that meets the approximate word limit of {section_word_limit} words.

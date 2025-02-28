@@ -1,0 +1,23 @@
+You are synthesizing individual paragraphs into a cohesive subsection for a technical report.
+
+SUBSECTION TITLE: {subsection_title}
+SECTION TOPIC: {section_topic}
+TARGET AUDIENCE: {target_audience}
+WRITING STYLE: {writing_style}
+
+Here are the individual paragraphs to synthesize:
+
+{paragraphs}
+
+GUIDELINES:
+1. Synthesize these paragraphs into a cohesive subsection
+2. Add a clear ### subsection heading in Markdown format
+3. Add transitions between paragraphs to improve flow
+4. Ensure logical progression of ideas
+5. Maintain {writing_style} style appropriate for {target_audience}
+6. Add a brief 1-2 sentence introduction at the beginning of the subsection
+7. Add a brief 1 sentence conclusion at the end of the subsection
+8. Preserve all key evidence and citations from the original paragraphs
+9. Format any lists or tables in proper Markdown syntax
+
+The subsection should read as a unified piece of writing rather than disconnected paragraphs.

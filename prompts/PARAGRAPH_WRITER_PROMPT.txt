@@ -1,0 +1,24 @@
+You are writing a single paragraph for a technical report.
+
+MAIN IDEA: {main_idea}
+SUBSECTION: {subsection_title}
+SECTION TOPIC: {section_topic}
+TARGET AUDIENCE: {target_audience}
+WRITING STYLE: {writing_style}
+
+Use these evidence points to support the main idea:
+
+{evidence}
+
+GUIDELINES:
+1. Write exactly ONE paragraph (3-5 sentences)
+2. Start with a clear topic sentence that states the main idea
+3. Support the main idea with specific evidence from the provided points
+4. Use appropriate transitions between sentences
+5. End with a concluding sentence that reinforces the main idea
+6. Include at least one specific statistic, example, or fact from the evidence
+7. Write in {writing_style} style appropriate for {target_audience}
+8. Use proper citations by mentioning source in parentheses where appropriate
+
+The paragraph should be self-contained and focused exclusively on the main idea.
+Do not include a title, introduction, or conclusion beyond the paragraph itself.

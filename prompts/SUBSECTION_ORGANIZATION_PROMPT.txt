@@ -1,0 +1,28 @@
+You are a research assistant organizing evidence for a report section.
+
+SECTION TITLE: {section_title}
+SECTION TOPIC: {section_topic}
+
+You have collected the following evidence points:
+
+{evidence_points}
+
+Your task is to organize these evidence points into logical subsections:
+
+1. Group related evidence points that address similar aspects of the topic
+2. Create 3-5 subsections that collectively cover the section topic
+3. Give each subsection a clear, descriptive title
+4. For each subsection, identify 2-4 main points that should be covered
+5. Assign relevant evidence to each subsection
+
+GUIDELINES:
+• Each subsection should focus on a distinct aspect of the section topic
+• Subsection titles should be concise and descriptive
+• Main points should be specific claims that can be supported by evidence
+• Ensure all important evidence points are included in at least one subsection
+• Create a logical flow between subsections
+
+For each subsection, provide:
+- title: A clear, descriptive title
+- evidence: List of evidence points that belong in this subsection
+- main_points: 2-4 specific claims or points that should be covered

@@ -1,27 +1,26 @@
 #app.py
-import os
-import asyncio
-import uvicorn
-from fastapi import FastAPI, Request
+
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi import FastAPI, BackgroundTasks
-from fastapi.responses import FileResponse
+from pydantic import BaseModel
+import os, asyncio, uvicorn
 from dotenv import load_dotenv
 from agent import (
-    initialize_agent,       # Function to compile and return the reporter_agent (a CompiledStateGraph)
+    initialize_agent,
     ResearchChatbot,
-    ask_for_clarification,    # Clarification function
-    update_clarification    # Function to update state with user's clarification
+    ask_for_clarification,
+    update_clarification,
+    handle_confirmation
 )
+
 load_dotenv()
 
 app = FastAPI()
 
 # Mount the static folder (with our custom CSS and JS files)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 templates = Jinja2Templates(directory="templates")
 
 # Initialize the agent and chatbot once at startup.
@@ -29,64 +28,127 @@ reporter_agent = asyncio.run(initialize_agent())
 chatbot = ResearchChatbot(reporter_agent)
 
 # Global in-memory conversation state for demonstration.
-# In practice, you might store session-specific state.
-conversation_state = {"topic": "", "filename": ""}
+conversation_state = {"topic": "", "filename": "", "config": {}}
 
+# New configuration model
+class ReportConfig(BaseModel):
+    research_type: str
+    target_audience: str
+    structure: str
+    section_word_limit: int
+    writing_style: str
 
 @app.get("/", response_class=HTMLResponse)
 async def get_chat(request: Request):
     # Render "index.html" from templates folder
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Updated call_planner_agent to return the full event dictionary.
-async def call_planner_agent(agent, prompt, config={"recursion_limit": 50}):
-    from rich.console import Console
-    from rich.markdown import Markdown as RichMarkdown
-    console = Console()
-    events = agent.astream({'topic': prompt}, config, stream_mode="values")
-    async for event in events:
-        if 'final_report' in event:
-            md = RichMarkdown(event['final_report'])
-            console.print(md)
-            return event  # Return the entire event dictionary
+# New endpoint to accept configuration
+@app.post("/config")
+async def config_endpoint(config: ReportConfig):
+    global conversation_state
+    conversation_state["config"] = config.model_dump()
+    print(f"Configuration received: {conversation_state['config']}")
+    return JSONResponse({"message": "Configuration saved"})
+
+# Reset endpoint to clear conversation state
+@app.post("/reset")
+async def reset_conversation():
+    """Reset the conversation state to start a new report."""
+    global conversation_state
+    # Reset to empty initial state
+    conversation_state = {"topic": "", "filename": "", "config": {}}
+    return JSONResponse({"message": "Conversation reset successfully"})
 
 @app.post("/chat")
 async def chat_endpoint(request: Request):
     data = await request.json()
     user_message = data.get("message", "")
-
-    # For demonstration, we keep everything in a conversation_state dict
-    # that matches the structure of ReportState
-    # e.g. conversation_state = {"topic": "", "clarifications": [], ...}
-
-    # 1. If we have never started, set the base topic to user_message
+    global conversation_state
+    
+    # 1. Handle confirmation responses
+    if conversation_state.get("awaiting_confirmation"):
+        updated_state = await handle_confirmation(conversation_state, user_message)
+        conversation_state.update(updated_state)
+        
+        if conversation_state.get("awaiting_confirmation"):
+            return JSONResponse({
+                "reply": conversation_state["confirmation_summary"],
+                "type": "confirmation"
+            })
+        
+        # If confirmation was accepted, proceed to report generation
+        return await proceed_to_report_generation(conversation_state)
+    
+    # 2. Handle feedback responses
+    if conversation_state.get("awaiting_feedback_response"):
+        # Store user's response as clarification
+        conversation_state["clarifications"].append(user_message)
+        conversation_state.pop("awaiting_feedback_response", None)
+        
+        # Re-evaluate with updated clarifications
+        updated_state = await update_clarification(conversation_state, user_message)
+        conversation_state.update(updated_state)
+        
+        if "last_feedback" in conversation_state:
+            return JSONResponse({
+                "reply": conversation_state["last_feedback"],
+                "type": "feedback"
+            })
+    
+    # 3. Initial topic setup
     if not conversation_state.get("topic"):
         conversation_state["topic"] = user_message
         conversation_state["clarifications"] = []
-        conversation_state["clarification_attempts"] = 0
         updated_state = await ask_for_clarification(conversation_state)
-        return JSONResponse({"reply": updated_state["clarifying_question"]})
-
-    # 2. If we're still awaiting a clarification
-    elif conversation_state.get("awaiting_clarification"):
+        conversation_state.update(updated_state)
+        return JSONResponse({
+            "reply": conversation_state["clarifying_question"],
+            "type": "clarification"
+        })
+    
+    # 4. Handle ongoing clarification process
+    if conversation_state.get("awaiting_clarification"):
         updated_state = await update_clarification(conversation_state, user_message)
-        if updated_state.get("awaiting_clarification"):
-            # Still not enough detail
-            return JSONResponse({"reply": updated_state["clarifying_question"]})
-        # else, done clarifying => we can proceed to final step
+        conversation_state.update(updated_state)
+        
+        if "last_feedback" in updated_state:
+            return JSONResponse({
+                "reply": updated_state["last_feedback"],
+                "type": "feedback"
+            })
+            
+        if "confirmation_summary" in updated_state:
+            return JSONResponse({
+                "reply": updated_state["confirmation_summary"],
+                "type": "confirmation"
+            })
+    
+    # 5. Proceed to report generation if all checks passed
+    return await proceed_to_report_generation(conversation_state)
 
-    # 3. If no clarifications needed, or we've just finished clarifications,
-    # pass everything to the chatbot handle_input
-    final_report_response = await chatbot.handle_input(conversation_state)
-
-    if "reply" in final_report_response:
-        # Possibly handle the partial or final response
-        return JSONResponse({"reply": final_report_response["reply"]})
-
-    # If we got the final report, store the filename, etc.
-    conversation_state["filename"] = final_report_response.get("filename")
-    return JSONResponse({"reply": final_report_response.get("final_report")})
-
+async def proceed_to_report_generation(state):
+    """Handle the final report generation process"""
+    try:
+        final_report_response = await chatbot.handle_input(state)
+        
+        if "final_report" in final_report_response:
+            state["filename"] = final_report_response.get("filename")
+            return JSONResponse({
+                "reply": final_report_response["final_report"],
+                "type": "final_report"
+            })
+            
+        return JSONResponse({
+            "reply": "Starting report generation process...",
+            "type": "status"
+        })
+        
+    except Exception as e:
+        return JSONResponse({
+            "reply": f"Error generating report: {str(e)}",
+            "type": "error"
+        })
 
 @app.get("/download_report")
 async def download_report(background_tasks: BackgroundTasks):
@@ -94,14 +156,22 @@ async def download_report(background_tasks: BackgroundTasks):
     print(f"Looking for file: {filename}")
     if not filename:
         return JSONResponse(content={"error": "Report not generated yet."}, status_code=404)
+    
     file_path = os.path.join(os.getcwd(), filename)
     print(f"Looking for file at: {file_path}")
+    
     # Schedule deletion of the file after the response is sent
     background_tasks.add_task(os.remove, file_path)
+    
     if os.path.exists(file_path):
-        return FileResponse(file_path, filename=filename, media_type="text/markdown",
-                            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-                            background=background_tasks)
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="text/markdown",
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+            background=background_tasks
+        )
+    
     return JSONResponse(content={"error": "Report not found."}, status_code=404)
 
 if __name__ == "__main__":

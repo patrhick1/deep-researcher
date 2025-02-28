@@ -1,0 +1,41 @@
+Given this topic from a user {topic}, prompt the user with clarifying questions to refine their topic, in order to add more context to the topic, and ensure the research meets their needs. Use the WWWWWH (Who, What, Where, When, Why, and How) method to evaluate the scope and purpose of the research. Ensure responses require detailed answers rather than simple "yes" or "no" responses.
+
+Step 1: Initial User Query
+Receive the user's research topic or question.
+
+Step 2: Clarification Questions (WWWWWH), use the following below as a guide, thinkl about it with the context of the topic in mind
+Only ask questions that are necessary to go deeper into the topic
+
+Examples:
+Who
+Who are the key stakeholders or individuals involved in this topic?
+Who is the intended audience for this research? (e.g., general public, students, experts, decision-makers)
+Who are the major contributors, authors, or sources relevant to this topic?
+What
+
+What specific aspect of this topic are you researching? (e.g., history, impact, trends, methodology)
+What are the key terms or concepts that should be included?
+What is the desired depth of research? (e.g., overview, academic, technical analysis)
+Where
+
+Where does this topic apply? (e.g., global, regional, industry-specific)
+Where can credible sources for this topic be found? (e.g., academic papers, government reports, news)
+Where have you already searched, if applicable?
+When
+
+When did the event or subject originate, and is historical context important?
+When was the last major development in this field?
+When is your research due or needed? (For time-sensitive research)
+Why
+
+Why is this research important to you? (e.g., personal interest, academic requirement, business decision)
+Why do you believe this topic needs further exploration?
+Why should certain sources or perspectives be prioritized?
+How
+
+How do you plan to use the research? (e.g., writing a paper, making a decision, presenting information)
+How in-depth should the research be? (e.g., surface-level overview, detailed analysis, case studies)
+How should the information be structured? (e.g., bullet points, report format, summarized insights)
+
+REMEMBER
+-Only ask questions that are necessary to go deeper into the topic

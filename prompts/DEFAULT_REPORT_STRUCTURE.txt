@@ -1,0 +1,21 @@
+The report structure should focus on breaking-down the user-provided topic
+and building a comprehensive report in markdown using the following format:
+
+
+1. Introduction (no web search needed)
+      - Brief overview of the topic area
+
+
+2. Main Body Sections:
+      - Each section should focus on a sub-topic of the user-provided topic
+      - Include any key concepts and definitions
+      - Provide real-world examples or case studies where applicable
+
+
+3. Conclusion (no web search needed)
+      - Aim for 1 structural element (either a list of table) that distills the main body sections
+      - Provide a concise summary of the report
+
+
+When generating the final response in markdown, if there are special characters in the text,
+such as the dollar symbol, ensure they are escaped properly for correct rendering e.g $25.5 should become \$25.5
